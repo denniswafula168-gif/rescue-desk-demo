@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rescue Desk demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f2f5f3;--card:#fff;--ink:#14231f;--mute:#53645e;--line:#d5dedb;--acc:#0f766e;--on:#fff;--crit:#c62828;--urg:#a86400;--ok:#2e7d32;
+ box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1614;--card:#16211e;--ink:#e8f1ee;--mute:#9db1aa;--line:#2a3a35;--acc:#2dd4bf;--on:#04211d;--crit:#ff6b6b;--urg:#f5b041;--ok:#6fcf74}}
+:root[data-theme="dark"]{--bg:#0e1614;--card:#16211e;--ink:#e8f1ee;--mute:#9db1aa;--line:#2a3a35;--acc:#2dd4bf;--on:#04211d;--crit:#ff6b6b;--urg:#f5b041;--ok:#6fcf74}
+*,*:before,*:after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.5 "IBM Plex Sans",system-ui,sans-serif}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:16px 20px;border-bottom:1px solid var(--line)}
+h1{font-size:20px;margin:0;font-weight:600}
+header p{margin:2px 0 0;color:var(--mute);font-size:14px}
+.grid{display:grid;grid-template-columns:1.1fr .8fr 1.3fr;gap:16px;padding:16px 20px 28px;max-width:1280px;margin:0 auto}
+@media(max-width:980px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;min-width:0}
+h2{font-size:14px;margin:0 0 12px;font-weight:600;color:var(--mute)}
+label{display:block;font-weight:500;margin:10px 0 4px;font-size:14px}
+input,select{width:100%;padding:10px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);font:inherit}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button{font:600 15px "IBM Plex Sans",sans-serif;border:0;border-radius:9px;padding:11px 14px;cursor:pointer;background:var(--acc);color:var(--on)}
+button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button[disabled]{opacity:.4;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.chip{display:inline-block;font-weight:600;border:2px solid currentColor;border-radius:999px;padding:1px 12px;font-size:13px}
+.steps{list-style:none;margin:14px 0;padding:0;display:grid;gap:6px}
+.steps li{color:var(--mute)}.steps li.on{color:var(--ink);font-weight:500}.steps li.on:before{content:"\2713  ";color:var(--ok)}.steps li:not(.on):before{content:"\25CB  "}
+.btns{display:grid;gap:8px;margin-top:12px}
+.phone{width:min(240px,100%);margin:0 auto;border:3px solid var(--ink);border-radius:26px;padding:18px 12px;min-height:330px;background:var(--bg)}
+.sms{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;font-size:14px;margin-bottom:10px}
+.phone small{color:var(--mute)}
+.big{font:600 28px "IBM Plex Mono",monospace}
+.map{width:100%;height:auto;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}
+th,td{text-align:left;padding:6px 4px;border-bottom:1px solid var(--line)}
+th{color:var(--mute);font-weight:500}
+.log{margin:12px 0 0;padding:0;list-style:none;font-size:13px;color:var(--mute);max-height:130px;overflow:auto}
+.log b{font-family:"IBM Plex Mono",monospace;font-weight:500;color:var(--ink)}
+.note{color:var(--mute);font-size:13px;margin:10px 0 0}
+</style>
+</head>
+<body>
+<header>
+<div><h1>Rescue Desk</h1><p>Demo only. No real calls or SMS are sent, and the map is simulated.</p></div>
+<button class="ghost" id="reset">Start a new call</button>
+</header>
+<div class="grid">
+
+<section class="card" aria-labelledby="h1a">
+<h2 id="h1a">1. Call-taker</h2>
+<label for="ph">Caller's phone number</label>
+<input id="ph" inputmode="tel" value="0712 345 678">
+<label for="inc">What happened?</label>
+<select id="inc"><option>Road accident</option><option>Chest pain</option><option>Difficulty breathing</option><option>Birth or pregnancy emergency</option><option>Fall or injury</option><option>Other</option></select>
+<div class="two">
+<div><label for="pat">Patients</label><select id="pat"><option>1</option><option>2</option><option>3 or more</option></select></div>
+<div><label for="con">Awake and breathing normally?</label><select id="con"><option>Yes</option><option>No</option></select></div>
+</div>
+<p style="margin:14px 0 0">Suggested priority: <span class="chip" id="prio"></span></p>
+<ul class="steps" id="steps" aria-live="polite"></ul>
+<div class="btns">
+<button id="send">Send location link by SMS</button>
+<button id="disp" disabled>Dispatch nearest ambulance</button>
+</div>
+</section>
+
+<section class="card" aria-labelledby="h1b">
+<h2 id="h1b">2. Caller's phone</h2>
+<div class="phone" id="phone" aria-live="polite"></div>
+</section>
+
+<section class="card" aria-labelledby="h1c">
+<h2 id="h1c">3. Dispatch board</h2>
+<svg class="map" id="map" viewBox="0 0 400 280" role="img" aria-label="Simulated map with the caller and ambulance units"></svg>
+<table><thead><tr><th>Unit</th><th>Status</th><th>Distance</th></tr></thead><tbody id="units"></tbody></table>
+<ul class="log" id="log"></ul>
+<p class="note">On a live system the caller's real GPS position replaces the simulated one.</p>
+</section>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const KMU=0.05, SPEED=40, DUR=14000;
+let S,units,timer;
+function fresh(){
+  clearInterval(timer);
+  S={sent:false,opened:false,got:false,loc:null,unit:null,done:false,eta:0,log:[],prog:0};
+  units=[{id:"A",x:70,y:60,st:"Available"},{id:"B",x:310,y:215,st:"Available"},{id:"C",x:335,y:55,st:"Busy"}];
+  units.forEach(u=>{u.sx=u.x;u.sy=u.y});
+  add("Call received");
+  render();
+}
+function add(t){const d=new Date();S.log.unshift([d.toTimeString().slice(0,8),t])}
+function prio(){
+  const inc=$("inc").value,ok=$("con").value==="Yes",n=$("pat").selectedIndex;
+  if(!ok||inc==="Chest pain"||inc==="Difficulty breathing")return["Critical","var(--crit)"];
+  if(inc==="Road accident"||inc.startsWith("Birth")||n>0)return["Urgent","var(--urg)"];
+  return["Standard","var(--ok)"];
+}
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y)*KMU*1.3;
+function render(){
+  const p=prio();const c=$("prio");c.textContent=p[0];c.style.color=p[1];
+  const st=[["Call received",true],["Location link sent",S.sent],["Location received",S.got],["Ambulance dispatched",!!S.unit],["Ambulance on scene",S.done]];
+  $("steps").innerHTML=st.map(s=>'<li class="'+(s[1]?"on":"")+'">'+s[0]+"</li>").join("");
+  $("send").disabled=S.sent;
+  $("disp").disabled=!(S.got&&!S.unit);
+  // phone
+  let h="";
+  if(!S.sent)h='<small>No messages yet. Send the link from the call-taker panel.</small>';
+  else if(!S.opened)h='<div class="sms">Rescue Desk: tap to share your location so we can find you. rescue.example/a7k2</div><button id="open" style="width:100%">Open link</button>';
+  else if(!S.got)h='<p><b>Share your location?</b></p><p><small>This sends your position to the emergency desk only.</small></p><button id="share" style="width:100%">Share my location</button>';
+  else if(!S.unit)h='<p><b>Location sent.</b></p><p><small>Stay where you are. We are finding the nearest ambulance.</small></p>';
+  else if(!S.done)h='<p><b>Help is on the way</b></p><p>Unit '+S.unit.id+' arrives in</p><div class="big">'+Math.max(1,Math.ceil(S.eta*(1-S.prog)))+' min</div><p><small>Stay on the line and keep the patient comfortable.</small></p>';
+  else h='<p><b>The ambulance has arrived.</b></p>';
+  $("phone").innerHTML='<p style="margin:0 0 10px;font-size:13px;color:var(--mute)">'+esc($("ph").value)+'</p>'+h;
+  if($("open"))$("open").onclick=()=>{S.opened=true;add("Caller opened the link");render()};
+  if($("share"))$("share").onclick=shareLoc;
+  // map
+  let m='<g stroke="var(--line)" stroke-width="6" fill="none"><path d="M0 100H400M0 190H400M110 0V280M270 0V280"/></g>';
+  if(S.loc){m+='<circle cx="'+S.loc.x+'" cy="'+S.loc.y+'" r="14" fill="var(--crit)" opacity=".25"/><circle cx="'+S.loc.x+'" cy="'+S.loc.y+'" r="7" fill="var(--crit)"/><text x="'+(S.loc.x+12)+'" y="'+(S.loc.y-10)+'" font-size="12" fill="var(--ink)">Caller</text>'}
+  if(S.unit&&S.loc)m+='<line x1="'+S.unit.x+'" y1="'+S.unit.y+'" x2="'+S.loc.x+'" y2="'+S.loc.y+'" stroke="var(--acc)" stroke-width="2" stroke-dasharray="5 4"/>';
+  units.forEach(u=>{const f=u.st==="Busy"?"var(--mute)":"var(--acc)";m+='<circle cx="'+u.x+'" cy="'+u.y+'" r="11" fill="'+f+'"/><text x="'+u.x+'" y="'+(u.y+4)+'" text-anchor="middle" font-size="12" font-weight="600" fill="var(--on)">'+u.id+'</text>'});
+  $("map").innerHTML=m;
+  $("units").innerHTML=units.map(u=>'<tr><td>Unit '+u.id+'</td><td>'+u.st+'</td><td>'+(S.loc?dist(u,S.loc).toFixed(1)+" km":"-")+'</td></tr>').join("");
+  $("log").innerHTML=S.log.map(l=>"<li><b>"+l[0]+"</b> "+esc(l[1])+"</li>").join("");
+}
+function shareLoc(){
+  S.got=true;S.loc={x:120+Math.random()*160,y:70+Math.random()*150};
+  const lat=(-1.2921+(140-S.loc.y)*0.0005).toFixed(4),lng=(36.8219+(S.loc.x-200)*0.0005).toFixed(4);
+  add("Location received ("+lat+", "+lng+")");render();
+}
+$("send").onclick=()=>{
+  if(!$("ph").value.trim()){$("ph").focus();return}
+  S.sent=true;add("Link sent to "+$("ph").value.trim());render();
+};
+$("disp").onclick=()=>{
+  const free=units.filter(u=>u.st==="Available").sort((a,b)=>dist(a,S.loc)-dist(b,S.loc));
+  if(!free.length)return;
+  const u=free[0];u.st="Dispatched";S.unit=u;
+  S.eta=dist(u,S.loc)/SPEED*60;
+  add("Unit "+u.id+" dispatched, about "+Math.ceil(S.eta)+" min ("+prio()[0]+")");
+  const t0=performance.now();
+  timer=setInterval(()=>{
+    S.prog=Math.min(1,(performance.now()-t0)/DUR);
+    u.x=u.sx+(S.loc.x-u.sx)*S.prog;u.y=u.sy+(S.loc.y-u.sy)*S.prog;
+    if(S.prog>=1){clearInterval(timer);u.st="On scene";S.done=true;add("Unit "+u.id+" on scene")}
+    render();
+  },120);
+  render();
+};
+["inc","pat","con"].forEach(i=>$(i).addEventListener("input",render));
+$("ph").addEventListener("input",render);
+$("reset").onclick=fresh;
+fresh();
+</script>
+</body>
+</html>
